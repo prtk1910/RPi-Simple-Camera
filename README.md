@@ -1,12 +1,11 @@
 # Simple Raspberry Pi Color + B&W Camera
 
-A deliberately minimal digital camera for a Raspberry Pi Zero, Pi Camera Module
-v1.3, Waveshare-style 1.14-inch IPS display, and UPS-Lite. The screen is only a
-viewfinder. There is no touchscreen handling, menu, overlay, focus peaking,
-digital zoom, filter, or adjustable camera setting.
+A compact digital camera for a Raspberry Pi Zero, Pi Camera Module v1.3,
+1.14-inch IPS display, and UPS-Lite. The display provides a live viewfinder,
+while a single physical shutter button captures matching full-resolution color
+and black-and-white JPEGs from the same exposure.
 
-Pressing the single physical shutter button captures one full-resolution frame
-and saves two JPEGs made from that same exposure:
+Each press saves two files:
 
 ```text
 20260920_142530_123456_color.jpg
@@ -18,7 +17,20 @@ of the exact same captured pixels; it is not a second exposure.
 
 ## Sample capture
 
-<img src="docs/sample-capture.jpg" alt="Full-resolution color sample captured by the Raspberry Pi camera" width="720">
+| Color | Black & white |
+|---|---|
+| <img src="docs/sample-capture.jpg" alt="Full-resolution color sample captured by the Raspberry Pi camera" width="360"> | <img src="docs/sample-capture-bw.jpg" alt="Matching full-resolution black-and-white sample from the same exposure" width="360"> |
+
+## Features
+
+- Live 240x135 color viewfinder with a center-cropped 16:9 preview
+- Quick shutter-frame and flash animation when a capture starts
+- Full 2592x1944 capture from the Camera Module v1.3
+- Matching color and neutral black-and-white JPEGs from the same exposure
+- Automatic exposure and white balance
+- High-quality JPEG output at quality 95
+- Simple one-button shutter with no touchscreen or desktop environment required
+- Automatic startup through systemd
 
 ## Hardware target
 
@@ -81,22 +93,22 @@ sudo apt install -y python3-picamera2 python3-opencv python3-numpy \
   python3-gpiozero python3-spidev
 ```
 
-Copy this directory to `/home/pi/rpi-simple-camera`, then verify the app before
-installing the service:
+Copy or clone this repository into the Pi user's home directory, then verify the
+app before installing the service:
 
 ```bash
-cd /home/pi/rpi-simple-camera
+cd ~/rpi-simple-camera
 python3 camera.py
 ```
 
-Pictures are written to `/home/pi/Pictures`, which is created automatically.
+Pictures are written to `~/Pictures`, which is created automatically.
 Stop the manual run with `Ctrl+C`.
 
 To copy all captured JPEGs to another computer on the same network, run this on
 that computer and replace the destination path as needed:
 
 ```bash
-scp 'pi@192.168.1.200:/home/pi/Pictures/*.jpg' ~/Desktop/
+scp 'YOUR_USER@raspberrypi.local:~/Pictures/*.jpg' ~/Desktop/
 ```
 
 ## Start automatically at boot
@@ -106,6 +118,10 @@ sudo cp systemd/rpi-simple-camera.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now rpi-simple-camera.service
 ```
+
+The bundled service file assumes the Pi username is `pi` and the repository is
+at `/home/pi/rpi-simple-camera`. If either differs, update `User`,
+`WorkingDirectory`, and `ExecStart` in the service file before installing it.
 
 This is a console service and does not need X11, Wayland, a desktop session, or
 a framebuffer mirror. The app sends the 240x135 preview directly to the ST7789
@@ -126,15 +142,5 @@ Run the small image-helper test suite on the Pi with:
 python3 -m unittest discover -s tests
 ```
 
-## Fixed behavior
-
-- Live, center-cropped 16:9 color preview on the LCD
-- Brief shutter-frame and flash animation when capture starts
-- Automatic exposure and white balance
-- One GPIO26 press captures one native-resolution frame
-- JPEG quality 95
-- Matching color and grayscale files from one exposure
-- No controls, touch input, UI, indicators, filters, or focus processing
-
-The hardware constants are collected at the top of `camera.py` and `st7789.py`
-if a physically different ST7789 board uses another pinout or orientation.
+Display pins, orientation, and other hardware constants are kept near the top
+of `camera.py` and `st7789.py` for straightforward customization.
