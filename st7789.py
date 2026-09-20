@@ -1,4 +1,4 @@
-"""Minimal direct-SPI driver for the Waveshare 0.96-inch ST7735S LCD."""
+"""Minimal direct-SPI driver for a 1.14-inch 240x135 ST7789 IPS LCD."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ import spidev
 from gpiozero import OutputDevice
 
 
-class ST7735S:
-    """Drive a 160x80 ST7735S panel without X11, Wayland, or a framebuffer."""
+class ST7789:
+    """Drive a 240x135 ST7789 panel without X11, Wayland, or a framebuffer."""
 
-    width = 160
-    height = 80
+    width = 240
+    height = 135
 
     def __init__(
         self,
@@ -59,39 +59,35 @@ class ST7735S:
 
     def _initialise(self) -> None:
         self._reset_panel()
-        self._command(0x11)  # Sleep out
-        time.sleep(0.12)
-        self._command(0x21)  # Inversion on
-        self._command(0xB1, bytes((0x05, 0x3A, 0x3A)))
-        self._command(0xB2, bytes((0x05, 0x3A, 0x3A)))
-        self._command(0xB3, bytes((0x05, 0x3A, 0x3A, 0x05, 0x3A, 0x3A)))
-        self._command(0xB4, bytes((0x03,)))
-        self._command(0xC0, bytes((0x62, 0x02, 0x04)))
-        self._command(0xC1, bytes((0xC0,)))
-        self._command(0xC2, bytes((0x0D, 0x00)))
-        self._command(0xC3, bytes((0x8D, 0x6A)))
-        self._command(0xC4, bytes((0x8D, 0xEE)))
-        self._command(0xC5, bytes((0x0E,)))
+        self._command(0x36, bytes((0x70,)))  # Landscape orientation, RGB panel
+        self._command(0x3A, bytes((0x05,)))  # 16-bit RGB565
+        self._command(0xB2, bytes((0x0C, 0x0C, 0x00, 0x33, 0x33)))
+        self._command(0xB7, bytes((0x35,)))
+        self._command(0xBB, bytes((0x19,)))
+        self._command(0xC0, bytes((0x2C,)))
+        self._command(0xC2, bytes((0x01,)))
+        self._command(0xC3, bytes((0x12,)))
+        self._command(0xC4, bytes((0x20,)))
+        self._command(0xC6, bytes((0x0F,)))
+        self._command(0xD0, bytes((0xA4, 0xA1)))
         self._command(
             0xE0,
             bytes(
                 (
-                    0x10,
-                    0x0E,
-                    0x02,
-                    0x03,
-                    0x0E,
-                    0x07,
-                    0x02,
-                    0x07,
-                    0x0A,
-                    0x12,
-                    0x27,
-                    0x37,
-                    0x00,
+                    0xD0,
+                    0x04,
                     0x0D,
-                    0x0E,
-                    0x10,
+                    0x11,
+                    0x13,
+                    0x2B,
+                    0x3F,
+                    0x54,
+                    0x4C,
+                    0x18,
+                    0x0D,
+                    0x0B,
+                    0x1F,
+                    0x23,
                 )
             ),
         )
@@ -99,42 +95,41 @@ class ST7735S:
             0xE1,
             bytes(
                 (
-                    0x10,
-                    0x0E,
-                    0x03,
-                    0x03,
-                    0x0F,
-                    0x06,
-                    0x02,
-                    0x08,
-                    0x0A,
+                    0xD0,
+                    0x04,
+                    0x0C,
+                    0x11,
                     0x13,
-                    0x26,
-                    0x36,
-                    0x00,
-                    0x0D,
-                    0x0E,
-                    0x10,
+                    0x2C,
+                    0x3F,
+                    0x44,
+                    0x51,
+                    0x2F,
+                    0x1F,
+                    0x1F,
+                    0x20,
+                    0x23,
                 )
             ),
         )
-        self._command(0x3A, bytes((0x05,)))  # 16-bit RGB565
-        self._command(0x36, bytes((0xA8,)))  # Landscape orientation, BGR panel
+        self._command(0x21)  # Inversion on
+        self._command(0x11)  # Sleep out
+        time.sleep(0.12)
         self._command(0x29)  # Display on
         time.sleep(0.02)
 
     def _set_full_window(self) -> None:
-        # The 160x80 glass begins at controller column 1, row 26.
-        self._command(0x2A, bytes((0x00, 0x01, 0x00, 0xA0)))
-        self._command(0x2B, bytes((0x00, 0x1A, 0x00, 0x69)))
+        # The 240x135 glass begins at controller column 40, row 53.
+        self._command(0x2A, bytes((0x00, 0x28, 0x01, 0x17)))
+        self._command(0x2B, bytes((0x00, 0x35, 0x00, 0xBB)))
         self._command(0x2C)
 
     @staticmethod
     def bgr_to_rgb565(frame: np.ndarray) -> bytes:
-        """Convert an exact 160x80 OpenCV BGR frame to big-endian RGB565."""
-        if frame.shape != (ST7735S.height, ST7735S.width, 3):
+        """Convert an exact 240x135 OpenCV BGR frame to big-endian RGB565."""
+        if frame.shape != (ST7789.height, ST7789.width, 3):
             raise ValueError(
-                f"expected an 80x160 BGR frame, received shape {frame.shape}"
+                f"expected a 135x240 BGR frame, received shape {frame.shape}"
             )
         b = frame[:, :, 0].astype(np.uint16)
         g = frame[:, :, 1].astype(np.uint16)
@@ -146,6 +141,24 @@ class ST7735S:
         self._set_full_window()
         self._dc.on()
         self._spi.writebytes2(self.bgr_to_rgb565(frame))
+
+    def capture_animation(self, frame: np.ndarray) -> None:
+        """Show a brief shutter-frame contraction and flash over a preview."""
+        for inset in (4, 18, 36):
+            animated = frame.copy()
+            cv2.rectangle(
+                animated,
+                (inset, inset),
+                (self.width - inset - 1, self.height - inset - 1),
+                (255, 255, 255),
+                3,
+            )
+            self.show(animated)
+            time.sleep(0.04)
+
+        self.show(np.full_like(frame, 255))
+        time.sleep(0.06)
+        self.show(frame)
 
     def clear(self) -> None:
         self.show(np.zeros((self.height, self.width, 3), dtype=np.uint8))
@@ -163,9 +176,9 @@ class ST7735S:
 
 
 def crop_preview(frame: np.ndarray) -> np.ndarray:
-    """Center-crop any BGR camera frame to 2:1, then resize to 160x80."""
+    """Center-crop a BGR camera frame to 16:9, then resize to 240x135."""
     height, width = frame.shape[:2]
-    target_ratio = ST7735S.width / ST7735S.height
+    target_ratio = ST7789.width / ST7789.height
     source_ratio = width / height
 
     if source_ratio > target_ratio:
@@ -178,5 +191,5 @@ def crop_preview(frame: np.ndarray) -> np.ndarray:
         frame = frame[top : top + crop_height, :]
 
     return cv2.resize(
-        frame, (ST7735S.width, ST7735S.height), interpolation=cv2.INTER_AREA
+        frame, (ST7789.width, ST7789.height), interpolation=cv2.INTER_AREA
     )

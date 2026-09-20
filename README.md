@@ -1,7 +1,7 @@
 # Simple Raspberry Pi Color + B&W Camera
 
 A deliberately minimal digital camera for a Raspberry Pi Zero, Pi Camera Module
-v1.3, Waveshare-style 0.96-inch IPS display, and UPS-Lite. The screen is only a
+v1.3, Waveshare-style 1.14-inch IPS display, and UPS-Lite. The screen is only a
 viewfinder. There is no touchscreen handling, menu, overlay, focus peaking,
 digital zoom, filter, or adjustable camera setting.
 
@@ -16,11 +16,15 @@ and saves two JPEGs made from that same exposure:
 The color file is saved first. The B&W file is a neutral grayscale conversion
 of the exact same captured pixels; it is not a second exposure.
 
+## Sample capture
+
+<img src="docs/sample-capture.jpg" alt="Full-resolution color sample captured by the Raspberry Pi camera" width="720">
+
 ## Hardware target
 
 - Raspberry Pi Zero W or Zero 2 W
 - Raspberry Pi Camera Module v1.3 (OV5647, fixed focus, 2592x1944 stills)
-- 0.96-inch 160x80 IPS SPI LCD using the ST7735S controller
+- 1.14-inch 240x135 IPS SPI LCD using the ST7789 controller
 - UPS-Lite for Raspberry Pi Zero
 - Normally-open momentary shutter switch
 
@@ -30,24 +34,34 @@ no secondary or long-press action.
 
 ## Wiring
 
-The display pinout follows the Waveshare 0.96-inch LCD module. GPIO numbers are
-BCM numbers.
+The display is the eight-pin, 1.14-inch 240x135 IPS module with an ST7789
+controller and pins labelled `GND VCC SCL SDA RES DC CS BLK`. Despite their
+names, `SCL` and `SDA` carry SPI clock and data; do not connect them to the Pi's
+I2C pins. GPIO numbers below are BCM numbers.
 
-| Part | Signal | Raspberry Pi |
-|---|---|---|
-| LCD | VCC | 3.3 V (physical pin 1) |
-| LCD | GND | GND (physical pin 6) |
-| LCD | DIN/MOSI | GPIO10 (physical pin 19) |
-| LCD | CLK/SCLK | GPIO11 (physical pin 23) |
-| LCD | CS | GPIO8/CE0 (physical pin 24) |
-| LCD | DC | GPIO25 (physical pin 22) |
-| LCD | RST | GPIO27 (physical pin 13) |
-| LCD | BL | GPIO18 (physical pin 12) |
-| Shutter | one terminal | GPIO26 (physical pin 37) |
-| Shutter | other terminal | GND (physical pin 39) |
+| Part | Module label | Pi function | Physical pin |
+|---|---|---|---:|
+| LCD | GND | Ground | 6 |
+| LCD | VCC | 3.3 V | 1 |
+| LCD | SCL | GPIO11 / SPI0 SCLK | 23 |
+| LCD | SDA | GPIO10 / SPI0 MOSI | 19 |
+| LCD | RES | GPIO27 | 13 |
+| LCD | DC | GPIO25 | 22 |
+| LCD | CS | GPIO8 / SPI0 CE0 | 24 |
+| LCD | BLK | GPIO18 | 12 |
+| Shutter | one terminal | GPIO26 | 37 |
+| Shutter | other terminal | Ground | 39 |
 
-The shutter uses the Pi's internal pull-up, matching the GPIO26 implementation
-in `rpi-film-simulation-camera`. Do not add a connection to 3.3 V.
+Use 3.3 V for the display supply and logic. No MISO wire is required because
+the LCD only receives data. The app drives `BLK` high after initialization and
+low during shutdown; do not connect `BLK` to both GPIO18 and 3.3 V. Switch off
+and disconnect Pi power before changing any wiring.
+
+The shutter uses the Pi's internal pull-up. Do not add a connection to 3.3 V.
+
+Connect the Camera Module v1.3 to the Pi Zero's CSI connector with the Pi
+powered off. This requires a Pi Zero 22-pin-to-15-pin camera cable rather than a
+standard 15-pin cable. Seat both ends squarely and close both locking tabs.
 
 ## Raspberry Pi OS setup
 
@@ -78,6 +92,13 @@ python3 camera.py
 Pictures are written to `/home/pi/Pictures`, which is created automatically.
 Stop the manual run with `Ctrl+C`.
 
+To copy all captured JPEGs to another computer on the same network, run this on
+that computer and replace the destination path as needed:
+
+```bash
+scp 'pi@192.168.1.200:/home/pi/Pictures/*.jpg' ~/Desktop/
+```
+
 ## Start automatically at boot
 
 ```bash
@@ -87,7 +108,8 @@ sudo systemctl enable --now rpi-simple-camera.service
 ```
 
 This is a console service and does not need X11, Wayland, a desktop session, or
-a framebuffer mirror. The app sends the 160x80 preview directly over SPI.
+a framebuffer mirror. The app sends the 240x135 preview directly to the ST7789
+over SPI.
 
 Useful diagnostics:
 
@@ -106,12 +128,13 @@ python3 -m unittest discover -s tests
 
 ## Fixed behavior
 
-- Live, center-cropped 2:1 color preview on the LCD
+- Live, center-cropped 16:9 color preview on the LCD
+- Brief shutter-frame and flash animation when capture starts
 - Automatic exposure and white balance
 - One GPIO26 press captures one native-resolution frame
 - JPEG quality 95
 - Matching color and grayscale files from one exposure
 - No controls, touch input, UI, indicators, filters, or focus processing
 
-The hardware constants are collected at the top of `camera.py` and `st7735s.py`
-if a physically different ST7735S board uses another pinout or orientation.
+The hardware constants are collected at the top of `camera.py` and `st7789.py`
+if a physically different ST7789 board uses another pinout or orientation.

@@ -13,7 +13,7 @@ import cv2
 from gpiozero import Button
 from picamera2 import Picamera2
 
-from st7735s import ST7735S, crop_preview
+from st7789 import ST7789, crop_preview
 
 
 PICTURES_DIR = Path("/home/pi/Pictures")
@@ -62,9 +62,10 @@ def run() -> None:
     display = None
     camera = None
     shutter = None
+    latest_preview = None
 
     try:
-        display = ST7735S()
+        display = ST7789()
         camera = Picamera2()
 
         preview_config = camera.create_preview_configuration(
@@ -93,6 +94,9 @@ def run() -> None:
             if shoot_event.is_set():
                 shoot_event.clear()
                 try:
+                    if latest_preview is not None:
+                        display.capture_animation(latest_preview)
+
                     # Picamera2 switches back to the preview configuration after
                     # returning this single full-resolution capture.
                     still = camera.switch_mode_and_capture_array(
@@ -105,7 +109,8 @@ def run() -> None:
                     traceback.print_exc()
 
             preview = camera.capture_array("main")
-            display.show(crop_preview(preview))
+            latest_preview = crop_preview(preview)
+            display.show(latest_preview)
 
     finally:
         if shutter is not None:
