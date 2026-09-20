@@ -5,15 +5,8 @@ A compact digital camera for a Raspberry Pi Zero, Pi Camera Module v1.3,
 while a single physical shutter button captures matching full-resolution color
 and black-and-white JPEGs from the same exposure.
 
-Each press saves two files:
-
-```text
-20260920_142530_123456_color.jpg
-20260920_142530_123456_bw.jpg
-```
-
-The color file is saved first. The B&W file is a neutral grayscale conversion
-of the exact same captured pixels; it is not a second exposure.
+Each press saves a timestamped color JPEG and a matching neutral
+black-and-white JPEG derived from the same captured pixels.
 
 ## Sample capture
 
