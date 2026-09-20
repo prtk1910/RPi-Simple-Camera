@@ -1,6 +1,6 @@
 # Simple Raspberry Pi Color + B&W Camera
 
-A compact digital camera for a Raspberry Pi Zero, Pi Camera Module v1.3,
+A compact digital camera for a Raspberry Pi Zero, Raspberry Pi Camera Module,
 1.14-inch IPS display, and UPS-Lite. The display provides a live viewfinder,
 while a single physical shutter button captures matching full-resolution color
 and black-and-white JPEGs from the same exposure.
@@ -18,7 +18,7 @@ black-and-white JPEG derived from the same captured pixels.
 
 - Live 240x135 color viewfinder with a center-cropped 16:9 preview
 - Quick shutter-frame and flash animation when a capture starts
-- Full 2592x1944 capture from the Camera Module v1.3
+- Full-resolution capture using the connected camera sensor's native resolution
 - Matching color and neutral black-and-white JPEGs from the same exposure
 - Automatic exposure and white balance
 - High-quality JPEG output at quality 95
@@ -28,7 +28,7 @@ black-and-white JPEG derived from the same captured pixels.
 ## Hardware target
 
 - Raspberry Pi Zero W or Zero 2 W
-- Raspberry Pi Camera Module v1.3 (OV5647, fixed focus, 2592x1944 stills)
+- Raspberry Pi Camera Module v1.3, v2, or another Picamera2-compatible CSI camera
 - 1.14-inch 240x135 IPS SPI LCD using the ST7789 controller
 - UPS-Lite for Raspberry Pi Zero
 - Normally-open momentary shutter switch
@@ -36,6 +36,13 @@ black-and-white JPEG derived from the same captured pixels.
 UPS-Lite supplies power only and needs no integration in the app. Shut Raspberry
 Pi OS down cleanly over SSH before switching off the UPS-Lite; the shutter has
 no secondary or long-press action.
+
+The included display driver is configured and tested for the 1.14-inch 240x135
+ST7789 module. Similar SPI LCDs can also work, but they are not drop-in
+replacements. Depending on the panel and controller, adapt `st7789.py` for its
+resolution, initialization commands, orientation and color order, display-RAM
+offsets, SPI speed, and GPIO mapping. A display using a different controller
+will generally need its own driver implementation.
 
 ## Wiring
 
@@ -64,9 +71,10 @@ and disconnect Pi power before changing any wiring.
 
 The shutter uses the Pi's internal pull-up. Do not add a connection to 3.3 V.
 
-Connect the Camera Module v1.3 to the Pi Zero's CSI connector with the Pi
-powered off. This requires a Pi Zero 22-pin-to-15-pin camera cable rather than a
-standard 15-pin cable. Seat both ends squarely and close both locking tabs.
+Connect the camera module to the Pi Zero's CSI connector with the Pi powered
+off. The v1.3 and v2 modules require a Pi Zero 22-pin-to-15-pin camera cable
+rather than a standard 15-pin cable. Seat both ends squarely and close both
+locking tabs.
 
 ## Raspberry Pi OS setup
 
@@ -135,5 +143,5 @@ Run the small image-helper test suite on the Pi with:
 python3 -m unittest discover -s tests
 ```
 
-Display pins, orientation, and other hardware constants are kept near the top
-of `camera.py` and `st7789.py` for straightforward customization.
+Camera and display settings are kept in `camera.py` and `st7789.py` for
+straightforward customization.

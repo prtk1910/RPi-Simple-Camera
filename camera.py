@@ -19,7 +19,6 @@ from st7789 import ST7789, crop_preview
 PICTURES_DIR = Path("/home/pi/Pictures")
 SHUTTER_GPIO = 26
 PREVIEW_SIZE = (320, 240)
-STILL_SIZE = (2592, 1944)  # Native resolution of Pi Camera Module v1.3 (OV5647)
 JPEG_QUALITY = 95
 
 
@@ -75,7 +74,7 @@ def run() -> None:
             controls={"FrameDurationLimits": (33_333, 100_000)},
         )
         still_config = camera.create_still_configuration(
-            main={"size": STILL_SIZE, "format": "RGB888"},
+            main={"size": camera.sensor_resolution, "format": "RGB888"},
             display=None,
             buffer_count=1,
         )
