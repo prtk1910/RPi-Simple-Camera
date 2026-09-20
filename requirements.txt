@@ -1,0 +1,7 @@
+# Prefer the Raspberry Pi OS apt packages documented in README.md. This file is
+# provided for environments where the platform-specific packages are available.
+numpy
+opencv-python-headless
+gpiozero
+picamera2
+spidev

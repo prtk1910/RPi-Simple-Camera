@@ -1,0 +1,15 @@
+[Unit]
+Description=Simple Raspberry Pi color and black-and-white camera
+After=local-fs.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/rpi-simple-camera
+ExecStart=/usr/bin/python3 /home/pi/rpi-simple-camera/camera.py
+Restart=on-failure
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
