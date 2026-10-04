@@ -1,5 +1,5 @@
 [Unit]
-Description=Simple Raspberry Pi color and black-and-white camera
+Description=Simple Raspberry Pi film-style camera
 After=local-fs.target
 
 [Service]

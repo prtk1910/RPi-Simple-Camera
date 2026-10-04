@@ -1,27 +1,35 @@
-# Simple Raspberry Pi Color + B&W Camera
+# Simple Raspberry Pi Film Camera
 
 A compact digital camera for a Raspberry Pi Zero, Raspberry Pi Camera Module,
 1.14-inch IPS display, and UPS-Lite. The display provides a live viewfinder,
-while a single physical shutter button captures matching full-resolution color
-and black-and-white JPEGs from the same exposure.
+while a single physical button selects a film style or captures a full-resolution
+JPEG.
 
-Each press saves a timestamped color JPEG and a matching neutral
-black-and-white JPEG derived from the same captured pixels.
+Tap GPIO26 to cycle through the ten styles. The selected style appears briefly
+on the screen. Hold GPIO26 for more than one second, then release it to capture
+one image in that style. Standard is selected at startup. Ilford B&W produces
+the black-and-white image; captures no longer create a color/B&W pair.
 
 ## Sample capture
 
-| Color | Black & white |
+| Standard color | Ilford B&W |
 |---|---|
-| <img src="docs/sample-capture.jpg" alt="Full-resolution color sample captured by the Raspberry Pi camera" width="360"> | <img src="docs/sample-capture-bw.jpg" alt="Matching full-resolution black-and-white sample from the same exposure" width="360"> |
+| <img src="docs/sample-capture.jpg" alt="Full-resolution color sample captured by the Raspberry Pi camera" width="360"> | <img src="docs/sample-capture-bw.jpg" alt="Black-and-white sample captured by the Raspberry Pi camera" width="360"> |
 
 ## Features
 
 - Live 240x135 color viewfinder with a center-cropped 16:9 preview
 - Quick shutter-frame and flash animation when a capture starts
 - Full-resolution capture using the connected camera sensor's native resolution
-- Matching color and neutral black-and-white JPEGs from the same exposure
+- Ten live film styles: Standard, Classic Chrome, Kodak Portra, Fuji Velvia,
+  Fuji Astia, Ilford B&W, Kodak Gold, Warm Natural, Golden Daylight, and Soft Nostalgia
+- A short press cycles styles; a press over one second captures one styled JPEG
+- The style name appears on the viewfinder for about 1.6 seconds after switching
 - Automatic exposure and white balance
-- High-quality JPEG output at quality 95
+- Quality-92 JPEG output with the style name in the filename
+- Fresh preview frames and one YUV still buffer to reduce stale frames and
+  camera-memory pressure on a Pi Zero
+- Direct JPEG saving for Standard; faster planar-YUV styling for the three warm looks
 - Simple one-button shutter with no touchscreen or desktop environment required
 - Automatic startup through systemd
 
@@ -34,8 +42,7 @@ black-and-white JPEG derived from the same captured pixels.
 - Normally-open momentary shutter switch
 
 UPS-Lite supplies power only and needs no integration in the app. Shut Raspberry
-Pi OS down cleanly over SSH before switching off the UPS-Lite; the shutter has
-no secondary or long-press action.
+Pi OS down cleanly over SSH before switching off the UPS-Lite.
 
 The included display driver is configured and tested for the 1.14-inch 240x135
 ST7789 module. Similar SPI LCDs can also work, but they are not drop-in
@@ -91,7 +98,7 @@ then install the platform packages:
 ```bash
 sudo apt update
 sudo apt install -y python3-picamera2 python3-opencv python3-numpy \
-  python3-gpiozero python3-spidev
+  python3-gpiozero python3-spidev python3-simplejpeg
 ```
 
 Copy or clone this repository into the Pi user's home directory, then verify the
@@ -103,6 +110,7 @@ python3 camera.py
 ```
 
 Pictures are written to `~/Pictures`, which is created automatically.
+Each shutter hold saves one JPEG named with a timestamp and selected style.
 Stop the manual run with `Ctrl+C`.
 
 To copy all captured JPEGs to another computer on the same network, run this on
@@ -143,5 +151,10 @@ Run the small image-helper test suite on the Pi with:
 python3 -m unittest discover -s tests
 ```
 
-Camera and display settings are kept in `camera.py` and `st7789.py` for
-straightforward customization.
+Camera controls are in `camera.py`, style recipes are in `film_styles.py`, and
+the display driver is in `st7789.py`. Styled captures other than the three warm
+looks convert the full-resolution YUV frame to BGR for processing, so they may
+take longer on a Pi Zero. High-resolution cameras may need a larger CMA buffer
+in `/boot/firmware/config.txt` (for example `dtoverlay=cma,cma-128`); reboot
+after changing it. The sample images above show the original color and B&W
+output; they are examples of the two looks, not a new paired capture.
