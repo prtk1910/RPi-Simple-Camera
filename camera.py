@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import signal
 import threading
 import time
@@ -40,7 +41,8 @@ def image_path(now: datetime, style_index: int) -> Path:
 
 def draw_style_label(frame: np.ndarray, name: str) -> np.ndarray:
     """Overlay a short, legible style announcement on the live viewfinder."""
-    labelled = frame.copy()
+    # Draw in screen coordinates; ST7789.show rotates the frame for the panel.
+    labelled = cv2.rotate(frame, cv2.ROTATE_180)
     overlay = labelled[89:126]
     cv2.addWeighted(overlay, 0.35, overlay, 0, 0, dst=overlay)
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -48,7 +50,26 @@ def draw_style_label(frame: np.ndarray, name: str) -> np.ndarray:
     (text_w, text_h), _ = cv2.getTextSize(name, font, scale, 1)
     cv2.putText(labelled, name, ((ST7789.width - text_w) // 2, 108 + text_h // 2),
                 font, scale, (255, 255, 255), 1, cv2.LINE_AA)
-    return labelled
+    return cv2.rotate(labelled, cv2.ROTATE_180)
+
+
+def publish_jpeg(pending_path: Path, photo_path: Path) -> None:
+    """Publish a complete JPEG only after its data has reached storage."""
+    with pending_path.open("rb") as saved:
+        if saved.seek(0, os.SEEK_END) < 4:
+            raise OSError("JPEG encoder produced an empty or incomplete image")
+        saved.seek(0)
+        start = saved.read(2)
+        saved.seek(-2, os.SEEK_END)
+        if start != b"\xff\xd8" or saved.read(2) != b"\xff\xd9":
+            raise OSError("JPEG encoder produced an incomplete image")
+        os.fsync(saved.fileno())
+    pending_path.replace(photo_path)
+    directory_fd = os.open(photo_path.parent, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
 
 
 def capture_selected(camera: Picamera2, preview_config, still_config,
@@ -56,6 +77,7 @@ def capture_selected(camera: Picamera2, preview_config, still_config,
     """Free preview DMA buffers for the still, then restore preview promptly."""
     started = time.monotonic()
     photo_path = image_path(datetime.now(), style_index)
+    pending_path = photo_path.with_name(f".{photo_path.stem}.part.jpg")
     request = None
     still = None
     preview_restored = False
@@ -65,7 +87,7 @@ def capture_selected(camera: Picamera2, preview_config, still_config,
         camera.start()
         if style_index == 0:
             request = camera.capture_request()
-            request.save("main", str(photo_path))
+            request.save("main", str(pending_path))
             request.release()
             request = None
         else:
@@ -89,8 +111,10 @@ def capture_selected(camera: Picamera2, preview_config, still_config,
                 encoded = simplejpeg.encode_jpeg(
                     np.ascontiguousarray(styled), quality=JPEG_QUALITY,
                     colorspace="BGR", colorsubsampling="420", fastdct=True)
-            photo_path.write_bytes(encoded)
+            pending_path.write_bytes(encoded)
+        publish_jpeg(pending_path, photo_path)
     finally:
+        pending_path.unlink(missing_ok=True)
         if request is not None:
             request.release()
         if not preview_restored:

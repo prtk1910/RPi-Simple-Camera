@@ -138,6 +138,7 @@ class ST7789:
         return packed.astype(">u2", copy=False).tobytes()
 
     def show(self, frame: np.ndarray) -> None:
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
         self._set_full_window()
         self._dc.on()
         self._spi.writebytes2(self.bgr_to_rgb565(frame))
