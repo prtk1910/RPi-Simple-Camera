@@ -10,17 +10,25 @@ on the screen. Hold GPIO26 for more than one second, then release it to capture
 one image in that style. Standard is selected at startup. Ilford B&W produces
 the black-and-white image; captures no longer create a color/B&W pair.
 
-## Sample capture
+## Sample captures
 
-| Standard color | Ilford B&W |
+| Soft Nostalgia | Ilford B&W |
 |---|---|
-| <img src="docs/sample-capture.jpg" alt="Full-resolution color sample captured by the Raspberry Pi camera" width="360"> | <img src="docs/sample-capture-bw.jpg" alt="Black-and-white sample captured by the Raspberry Pi camera" width="360"> |
+| <img src="images/20261015_204814_083553_soft_nostalgia.jpg" alt="Sample photo captured with the Soft Nostalgia film style" width="360"> | <img src="images/20261015_204842_208218_ilford_bw.jpg" alt="Sample photo captured with the Ilford B&amp;W film style" width="360"> |
+
+## Camera build
+
+| Prototype | Assembled camera |
+|---|---|
+| <img src="images/1%20-%20Prototype.jpeg" alt="Raspberry Pi camera prototype" width="360"> | <img src="images/2-%20Assembled.jpeg" alt="Assembled Raspberry Pi camera, first view" width="360"> |
+| <img src="images/3%20-%20Assembled.jpeg" alt="Assembled Raspberry Pi camera, second view" width="360"> | <img src="images/4%20-%20Assembled.jpeg" alt="Assembled Raspberry Pi camera, third view" width="360"> |
 
 ## Features
 
 - Live 240x135 color viewfinder with a center-cropped 16:9 preview
 - Quick shutter-frame and flash animation when a capture starts
 - Full-resolution capture using the connected camera sensor's native resolution
+- New photos rotated 180° while the live preview keeps its original orientation
 - Ten live film styles: Standard, Classic Chrome, Kodak Portra, Fuji Velvia,
   Fuji Astia, Ilford B&W, Kodak Gold, Warm Natural, Golden Daylight, and Soft Nostalgia
 - A short press cycles styles; a press over one second captures one styled JPEG
@@ -156,5 +164,5 @@ the display driver is in `st7789.py`. Styled captures other than the three warm
 looks convert the full-resolution YUV frame to BGR for processing, so they may
 take longer on a Pi Zero. High-resolution cameras may need a larger CMA buffer
 in `/boot/firmware/config.txt` (for example `dtoverlay=cma,cma-128`); reboot
-after changing it. The sample images above show the original color and B&W
-output; they are examples of the two looks, not a new paired capture.
+after changing it. The sample images above are separate captures using the
+Soft Nostalgia and Ilford B&W film styles.

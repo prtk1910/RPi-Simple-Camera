@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 import simplejpeg
 from gpiozero import Button
+from libcamera import Transform
 from picamera2 import Picamera2
 
 from film_styles import FILM_PROFILES, PROFILE_IDS, _WARM_YUV_STYLES, style_yuv_planes
@@ -165,6 +166,7 @@ def run() -> None:
         )
         still_config = camera.create_still_configuration(
             main={"size": camera.sensor_resolution, "format": "YUV420"},
+            transform=Transform(hflip=True, vflip=True),
             raw=None, buffer_count=1,
         )
         camera.configure(preview_config)
